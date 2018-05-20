@@ -72,7 +72,7 @@ class OHoCo {
     
     void trigger_activate(char* trigger_name);
 
-    void config_read();
+    bool config_read();
     void config_write();
     void config_reset();
     void config_set(String cmd);

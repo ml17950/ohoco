@@ -1,8 +1,9 @@
 ADC_MODE(ADC_VCC);
 
 #include "OHoCo.h"
+#include "./credentials.h"
 
-const char*  SKETCH_VERSION     = "2018-04-14";
+const char*  SKETCH_VERSION     = "2018-05-20";
 const char*  WIFI_DEVICE_NAME   = "OHoCo-Libary-Test";
 
 #define MODULE_PIN     5
@@ -34,11 +35,11 @@ void setup() {
 //  ohoco.mqtt_disconnect();
 //  ohoco.mqtt_connected();
 
-  ohoco.wifi_config(WIFI_DEVICE_NAME, "HoCoNet", "HoCoNet.99");
+  ohoco.wifi_config(WIFI_DEVICE_NAME, WIFI_SSID, WIFI_PASS);
   ohoco.wifi_connect();
 
-  ohoco.http_config("192.168.178.250", 1883, "", "");
-//  ohoco.mqtt_config("192.168.178.250", 1883, "", "");
+  ohoco.http_config(CONTROLLER_IP, 80, "", "");
+//  ohoco.mqtt_config(CONTROLLER_IP, 1883, "", "");
 //  ohoco.mqtt_connect();
 
   ohoco.on_message(ohoco_callback);

@@ -534,7 +534,7 @@ void OHoCo::trigger_activate(char* trigger_name) {
     this->http_publish(topic, "fire");
 }
 
-void OHoCo::config_read() {
+bool OHoCo::config_read() {
   this->debug("CFG >> Reading configuration from EEEPROM");
   
   // Loads configuration from EEPROM into RAM
@@ -552,7 +552,10 @@ void OHoCo::config_read() {
     strcpy(this->_ohoco_cfg.dataTopic, "");
     strcpy(this->_ohoco_cfg.inTrigger, "");
     strcpy(this->_ohoco_cfg.outTrigger, "");
+
+    return false;
   }
+  return true;
 }
 
 void OHoCo::config_write() {
