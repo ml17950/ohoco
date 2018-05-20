@@ -1,0 +1,59 @@
+#######################################
+# Syntax Coloring Map For OHoCo
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+OHoCo	KEYWORD1
+ohoco	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+initialize			KEYWORD2
+setup_ready			KEYWORD2
+debugmode			KEYWORD2
+debug				KEYWORD2
+debuginline			KEYWORD2
+wifi_config			KEYWORD2
+wifi_connect		KEYWORD2
+wifi_disconnect		KEYWORD2
+wifi_connected		KEYWORD2
+http_config			KEYWORD2
+http_publish		KEYWORD2
+mqtt_config			KEYWORD2
+mqtt_connect		KEYWORD2
+mqtt_disconnect		KEYWORD2
+mqtt_connected		KEYWORD2
+mqtt_subscribe		KEYWORD2
+mqtt_publish		KEYWORD2
+keepalive			KEYWORD2
+send_alive_ping		KEYWORD2
+send_log			KEYWORD2
+register_device		KEYWORD2
+register_sensor		KEYWORD2
+register_switch		KEYWORD2
+set_sensor_value	KEYWORD2
+switch_on			KEYWORD2
+switch_off			KEYWORD2
+switch_toggle		KEYWORD2
+trigger_activate	KEYWORD2
+led_on				KEYWORD2
+led_off				KEYWORD2
+led_flash			KEYWORD2
+config_read			KEYWORD2
+config_write		KEYWORD2
+config_reset		KEYWORD2
+config_set			KEYWORD2
+config_send			KEYWORD2
+config_display		KEYWORD2
+config_command		KEYWORD2
+on_message			KEYWORD2
+reboot				KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
