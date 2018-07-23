@@ -3,10 +3,8 @@ ADC_MODE(ADC_VCC);
 #include "OHoCo.h"
 #include "./credentials.h"
 
-const char*  SKETCH_VERSION     = "2018-05-20";
+const char*  SKETCH_VERSION     = "2018-07-23";
 const char*  WIFI_DEVICE_NAME   = "OHoCo-Libary-Test";
-
-#define MODULE_PIN     5
 
 OHoCo ohoco;
 
@@ -19,46 +17,64 @@ void setup() {
   ohoco.debugmode(SERIAL);
   
   ohoco.initialize();
+  
+  if (!ohoco.config_read()) {
+    // Configuration not set or not valid -> set defaults, but don't save to EEPROM
+    strcpy(ohoco.config.displayName,     WIFI_DEVICE_NAME);
+    strcpy(ohoco.config.wifi_ssid,       WIFI_SSID);
+    strcpy(ohoco.config.wifi_pass,       WIFI_PASS);
+    strcpy(ohoco.config.controller_ip,   CONTROLLER_IP);
+    ohoco.config.controller_port       = CONTROLLER_PORT;
+    strcpy(ohoco.config.controller_user, CONTROLLER_USER);
+    strcpy(ohoco.config.controller_pass, CONTROLLER_PASS);
+    ohoco.config.useMQTT               = 0;
+    ohoco.config.checkInterval         = 60000;
+    ohoco.config.minValue              = 1;
+    ohoco.config.maxValue              = 9999;
+    strcpy(ohoco.config.dataTopic,       "");
+    strcpy(ohoco.config.inTrigger,       "");
+    strcpy(ohoco.config.outTrigger,      "");
+    strcpy(ohoco.config.genericValue01,  "");
+    strcpy(ohoco.config.genericValue02,  "");
+    strcpy(ohoco.config.genericValue03,  "");
+    strcpy(ohoco.config.genericValue04,  "");
+    strcpy(ohoco.config.genericValue05,  "");
+    strcpy(ohoco.config.genericValue06,  "");
+    strcpy(ohoco.config.genericValue07,  "");
+    strcpy(ohoco.config.genericValue08,  "");
+    strcpy(ohoco.config.genericValue09,  "");
+    strcpy(ohoco.config.genericValue10,  "");
+  }
   ohoco.config_display();
+
+  ohoco.wifi_connect();
+//  ohoco.wifi_connected();
+//  ohoco.wifi_disconnect();
+
+  if (ohoco.config.useMQTT == 1) {
+    ohoco.mqtt_setup();
+    ohoco.mqtt_connect();
+//  ohoco.mqtt_disconnect();
+//  ohoco.mqtt_connected();
+  }
+  else {
+    ohoco.http_setup();
+  }
   
 //  ohoco.led_on();
 //  ohoco.led_off();
 //  ohoco.led_flash(3, 200);
 
-//  ohoco.wifi_config("ssid", "pass");
-//  ohoco.wifi_config("ssid", "pass", "192.168.178.240", "192.168.178.254", "192.168.178.254");
-//  ohoco.wifi_connected()
-//  ohoco.wifi_disconnect();
-
-//  ohoco.mqtt_config("broker", 1883, "", "");
-//  ohoco.mqtt_connect();
-//  ohoco.mqtt_disconnect();
-//  ohoco.mqtt_connected();
-
-  ohoco.wifi_config(WIFI_DEVICE_NAME, WIFI_SSID, WIFI_PASS);
-  ohoco.wifi_connect();
-
-  ohoco.http_config(CONTROLLER_IP, 80, "", "");
-//  ohoco.mqtt_config(CONTROLLER_IP, 1883, "", "");
-//  ohoco.mqtt_connect();
-
+  // set callback function
   ohoco.on_message(ohoco_callback);
   
   ohoco.register_device(SKETCH_VERSION);
   ohoco.register_sensor("Test", "pir");
-
   
-//  ohoco.register_sensor("Garage", "gate");
+  LAST_CHECK_MILLIES = millis() - ohoco.config.checkInterval;
 
-//  ohoco.set_sensor_value("Garage", "open", " °C");
-//  delay(2000);
-//  ohoco.set_sensor_value("Garage", "moving", " %");
-//  delay(2000);
-//  ohoco.set_sensor_value("Garage", "closed", "");
-
-  pinMode(MODULE_PIN, INPUT);
-  
-  LAST_CHECK_MILLIES = millis() - ohoco._ohoco_cfg.checkInterval;
+  //pinMode(D5, OUTPUT);
+  //digitalWrite(D5, LOW);
   
 //  ohoco.mqtt_subscribe("asdf");
 
@@ -91,35 +107,11 @@ void setup() {
 void loop() {
   ohoco.keepalive();
 
-  if ((millis() - LAST_CHECK_MILLIES) > ohoco._ohoco_cfg.checkInterval) {
-    int THIS_DOOR_STATUS  = -1;
-    
+  if ((millis() - LAST_CHECK_MILLIES) > ohoco.config.checkInterval) {
     ohoco.debug("Starting measurement...");
 
-    if (digitalRead(MODULE_PIN) == LOW)
-      THIS_DOOR_STATUS = LOW;
-    else
-      THIS_DOOR_STATUS = HIGH;
-
-    if (THIS_DOOR_STATUS != LAST_DOOR_STATUS) {
-      ohoco.debuginline("*********** CHANGED ***********");
-      switch (THIS_DOOR_STATUS) {
-        case HIGH: ohoco.debug(" => CLOSED "); break;
-        case LOW:   ohoco.debug(" => OPEN "); break;
-      }
+    //digitalWrite(D5, !digitalRead(D5));
       
-      if (THIS_DOOR_STATUS == LOW) {
-        ohoco.trigger_activate("IR-GAR-OPEN");
-        ohoco.set_sensor_value("Garage", "open", "");
-      }
-      else {
-        ohoco.trigger_activate("IR-GAR-CLOSED");
-        ohoco.set_sensor_value("Garage", "closed", "");
-      }
-      
-      LAST_DOOR_STATUS = THIS_DOOR_STATUS;
-    }
-  
     ohoco.led_flash(2, 100);
     
     LAST_CHECK_MILLIES = millis();
@@ -130,6 +122,6 @@ void loop() {
 
 void ohoco_callback(String cmd) {
   if (cmd == "debug") {
-    LAST_CHECK_MILLIES = millis() - ohoco._ohoco_cfg.checkInterval;
+    LAST_CHECK_MILLIES = millis() - ohoco.config.checkInterval;
   }
 }
