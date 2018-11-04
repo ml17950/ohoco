@@ -3,21 +3,24 @@ ADC_MODE(ADC_VCC);
 #include "OHoCo.h"
 #include "./credentials.h"
 
-const char*  SKETCH_VERSION     = "2018-07-23";
+const char*  SKETCH_VERSION     = "18.10.05";
 const char*  WIFI_DEVICE_NAME   = "OHoCo-Libary-Test";
 
+// setup libaries
 OHoCo ohoco;
 
-int counter;
+// global variables
 unsigned long LAST_CHECK_MILLIES;
-int LAST_DOOR_STATUS;
+int COUNTER;
 
 void setup() {
-  // ohoco.debugmode(LED);
+  //ohoco.debugmode(LED);
   ohoco.debugmode(SERIAL);
+
+  ohoco.initialize(false);
   
-  ohoco.initialize();
-  
+//  ohoco.config_reset();
+
   if (!ohoco.config_read()) {
     // Configuration not set or not valid -> set defaults, but don't save to EEPROM
     strcpy(ohoco.config.displayName,     WIFI_DEVICE_NAME);
@@ -28,7 +31,7 @@ void setup() {
     strcpy(ohoco.config.controller_user, CONTROLLER_USER);
     strcpy(ohoco.config.controller_pass, CONTROLLER_PASS);
     ohoco.config.useMQTT               = 0;
-    ohoco.config.checkInterval         = 60000;
+    ohoco.config.checkInterval         = 10000;
     ohoco.config.minValue              = 1;
     ohoco.config.maxValue              = 9999;
     strcpy(ohoco.config.dataTopic,       "");
@@ -47,59 +50,27 @@ void setup() {
   }
   ohoco.config_display();
 
-  ohoco.wifi_connect();
-//  ohoco.wifi_connected();
-//  ohoco.wifi_disconnect();
+ohoco.config.useMQTT               = 0;
 
-  if (ohoco.config.useMQTT == 1) {
-    ohoco.mqtt_setup();
+  LAST_CHECK_MILLIES = millis() - ohoco.config.checkInterval + 3000;
+  COUNTER = 0;
+
+  ohoco.wifi_connect();
+  
+  if ((ohoco.config.useMQTT == 1) || (ohoco.config.controller_port == 1883)) {
+    //ohoco.mqtt_setup();
+    ohoco.mqtt_setup("ohoco/will/esp", "off", 0, false);
     ohoco.mqtt_connect();
-//  ohoco.mqtt_disconnect();
-//  ohoco.mqtt_connected();
   }
   else {
     ohoco.http_setup();
   }
-  
-//  ohoco.led_on();
-//  ohoco.led_off();
-//  ohoco.led_flash(3, 200);
 
-  // set callback function
-  ohoco.on_message(ohoco_callback);
-  
   ohoco.register_device(SKETCH_VERSION);
-  ohoco.register_sensor("Test", "pir");
-  
-  LAST_CHECK_MILLIES = millis() - ohoco.config.checkInterval;
-
-  //pinMode(D5, OUTPUT);
-  //digitalWrite(D5, LOW);
-  
-//  ohoco.mqtt_subscribe("asdf");
-
-//  ohoco.config_set("asd=123");
-//  ohoco.config_set("sdf=123=abc");
-  
-//  
-//
-//  ohoco.switch_on();
-//  ohoco.switch_off();
-//  ohoco.switch_toggle();
-
-//  ohoco.sensor_set_value();
-//
-//  ohoco.trigger_activate();
-//
-//  ohoco.config_read();
-//  ohoco.config_write();
-  
-
-//  delay(20000);
-//  ohoco.reboot();
-
-
-  counter = 0;
+  ohoco.register_sensor("test-sensor", "voltage", "V");
+//  ohoco.register_switch("test-socket", "light");
+//  ohoco.mqtt_publish("ohoco/will/esp", "on", false);  ohoco.register_notify("test-notify");  
+  ohoco.on_message(ohoco_callback);
 
   ohoco.setup_ready();
 }
@@ -107,21 +78,33 @@ void setup() {
 void loop() {
   ohoco.keepalive();
 
-  if ((millis() - LAST_CHECK_MILLIES) > ohoco.config.checkInterval) {
-    ohoco.debug("Starting measurement...");
+  ohoco.led_on();
+  delay(1000);
+  ohoco.led_off();
+  delay(1000);
 
-    //digitalWrite(D5, !digitalRead(D5));
-      
-    ohoco.led_flash(2, 100);
+  if ((millis() - LAST_CHECK_MILLIES) > ohoco.config.checkInterval) {
+    ohoco.led_flash(3, 100);
+
+    
+
+    ohoco.sensor_update("test-sensor", "3.5");
+
+
+    
+    //ohoco.notify("test-notify", "alarm");
+
+    // =============================================================================
     
     LAST_CHECK_MILLIES = millis();
   }
-  
-  delay(500);
 }
 
-void ohoco_callback(String cmd) {
-  if (cmd == "debug") {
+void ohoco_callback(String topic, String payload) {
+  ohoco.println("ohoco_callback (" + payload + ") on (" + topic + ")");
+  
+  if (payload == "DEBUG") {
     LAST_CHECK_MILLIES = millis() - ohoco.config.checkInterval;
+    COUNTER = 0;
   }
 }

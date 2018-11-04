@@ -2,7 +2,7 @@ ADC_MODE(ADC_VCC);
 
 #include <OHoCo.h>
 
-const char*  SKETCH_VERSION     = "2018-07-23";
+const char*  SKETCH_VERSION     = "18.10.06";
 const char*  WIFI_DEVICE_NAME   = "ESP-Robby-Monitor";
 
 #define HCSR04_ECHO_PIN     D6
@@ -42,28 +42,22 @@ void setup() {
     strcpy(ohoco.config.dataTopic,       "");
     strcpy(ohoco.config.inTrigger,       "US-ROBBY-HOME");
     strcpy(ohoco.config.outTrigger,      "US-ROBBY-AWAY");
-    strcpy(ohoco.config.genericValue01,  "");
-    strcpy(ohoco.config.genericValue02,  "");
-    strcpy(ohoco.config.genericValue03,  "");
-    strcpy(ohoco.config.genericValue04,  "");
-    strcpy(ohoco.config.genericValue05,  "");
-    strcpy(ohoco.config.genericValue06,  "");
-    strcpy(ohoco.config.genericValue07,  "");
-    strcpy(ohoco.config.genericValue08,  "");
-    strcpy(ohoco.config.genericValue09,  "");
-    strcpy(ohoco.config.genericValue10,  "");
   }
   ohoco.config_display();
 
+  // ----------------------------------------
+  
   pinMode(HCSR04_ECHO_PIN, INPUT);
   pinMode(HCSR04_TRIG_PIN, OUTPUT);
 
   LAST_STATUS = ROBBY_IS_AWAY;
   LAST_CHECK_MILLIES = millis() - ohoco.config.checkInterval;
 
+  // ----------------------------------------
+  
   ohoco.wifi_connect();
 
-  if (ohoco.config.useMQTT == 1) {
+  if ((ohoco.config.useMQTT == 1) || (ohoco.config.controller_port == 1883)) {
     ohoco.mqtt_setup();
     ohoco.mqtt_connect();
   }
@@ -72,7 +66,7 @@ void setup() {
   }
 
   ohoco.register_device(SKETCH_VERSION);
-  ohoco.register_sensor("Robby", "mower");
+  ohoco.register_sensor("Robby", "mower", "");
 
   ohoco.on_message(ohoco_callback);
   
@@ -109,20 +103,20 @@ void loop() {
     
     if (THIS_STATUS != LAST_STATUS) {
       if (THIS_STATUS == ROBBY_IS_HOME) {
-        ohoco.debug("HCSR04 -> found object");
+        ohoco.println("HCSR04 -> found object");
 
         ohoco.trigger_activate(ohoco.config.inTrigger);
-        ohoco.set_sensor_value("Robby", "charging", "");
+        ohoco.sensor_update("Robby", "charging");
       }
       else {
-        ohoco.debug("HCSR04 -> no object");
+        ohoco.println("HCSR04 -> no object");
 
         ohoco.trigger_activate(ohoco.config.outTrigger);
-        ohoco.set_sensor_value("Robby", "working", "");
+        ohoco.sensor_update("Robby", "working");
       }
     }
     else {
-      ohoco.debug("HCSR04 -> no change");
+      ohoco.println("HCSR04 -> no change");
     }
 
     ohoco.led_flash(2, 100);
@@ -134,11 +128,13 @@ void loop() {
   delay(1000);
 }
 
-void ohoco_callback(String cmd) {
-  if (cmd == "DEBUG") {
+void ohoco_callback(String topic, String payload) {
+  ohoco.println("ohoco_callback (" + payload + ") on (" + topic + ")");
+
+  if (payload == "DEBUG") {
     long distance1 = HCSR04_read_distance();
     char cm[12] = {0};
     ltoa(distance1, cm, 10);
-    ohoco.set_sensor_value("DEBUG", cm, " cm");
+    ohoco.sensor_update("DEBUG", cm);
   }
 }

@@ -16,21 +16,21 @@ void init_software_pwm(unsigned char carrierFreq) {
       break;
   }
 
-  Serial.print("period total (µs): ");
-  Serial.println(period);
-  Serial.print("period high  (µs): ");
-  Serial.println(periodHigh);
-  Serial.print("period low   (µs): ");
-  Serial.println(periodLow);
+  ohoco.print("period total (µs): ");
+  ohoco.println(period);
+  ohoco.print("period high  (µs): ");
+  ohoco.println(periodHigh);
+  ohoco.print("period low   (µs): ");
+  ohoco.println(periodLow);
   
-  Serial.print("pwm initialized @ ");
-  Serial.print(carrierFreq);
-  Serial.println(" kHz");
-  Serial.println();
+  ohoco.print("pwm initialized @ ");
+  ohoco.print(carrierFreq);
+  ohoco.println(" kHz");
+  ohoco.println("");
 }
 
 void space_micros(unsigned int mLen) { //uses sigTime as end parameter
-  ohoco.debug("IR  >> space_micros for " + String(mLen) + " µs");
+  ohoco.println("IR   >> space_micros for " + String(mLen) + " µs");
   unsigned long now = micros();
   unsigned long dur = now; //allows for rolling time adjustment due to code execution delays
   if (mLen == 0) return;
@@ -40,7 +40,7 @@ void space_micros(unsigned int mLen) { //uses sigTime as end parameter
 void pulse_micros(unsigned long mLen) {
   if (mLen == 0)
     return;
-  ohoco.debug("IR  >> pulse_micros for " + String(mLen) + " µs");
+  ohoco.println("IR   >> pulse_micros for " + String(mLen) + " µs");
   unsigned long now = micros();
   while ((micros() - now) < mLen) {
 //    digitalWrite(IR_SEND_PIN, HIGH);

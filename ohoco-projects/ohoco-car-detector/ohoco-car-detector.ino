@@ -2,7 +2,7 @@ ADC_MODE(ADC_VCC);
 
 #include <OHoCo.h>
 
-const char*  SKETCH_VERSION     = "2018-07-23";
+const char*  SKETCH_VERSION     = "18.10.06";
 const char*  WIFI_DEVICE_NAME   = "ESP-Car-Detector";
 
 #define HCSR04_ECHO_PIN     D5
@@ -42,25 +42,17 @@ void setup() {
     strcpy(ohoco.config.controller_user, CONTROLLER_USER);
     strcpy(ohoco.config.controller_pass, CONTROLLER_PASS);
     ohoco.config.useMQTT               = 0;
-    ohoco.config.checkInterval         = 60000;
-    ohoco.config.minValue              = 1;
-    ohoco.config.maxValue              = 9999;
+    ohoco.config.checkInterval         = 15000;
+    ohoco.config.minValue              = 50;
+    ohoco.config.maxValue              = 150;
     strcpy(ohoco.config.dataTopic,       "");
     strcpy(ohoco.config.inTrigger,       "");
     strcpy(ohoco.config.outTrigger,      "");
-    strcpy(ohoco.config.genericValue01,  "");
-    strcpy(ohoco.config.genericValue02,  "");
-    strcpy(ohoco.config.genericValue03,  "");
-    strcpy(ohoco.config.genericValue04,  "");
-    strcpy(ohoco.config.genericValue05,  "");
-    strcpy(ohoco.config.genericValue06,  "");
-    strcpy(ohoco.config.genericValue07,  "");
-    strcpy(ohoco.config.genericValue08,  "");
-    strcpy(ohoco.config.genericValue09,  "");
-    strcpy(ohoco.config.genericValue10,  "");
   }
   ohoco.config_display();
 
+  // ----------------------------------------
+  
   pinMode(HCSR04_ECHO_PIN, INPUT);
   pinMode(HCSR04_TRIG_PIN, OUTPUT);
   pinMode(DOOR_CHECK_PIN, INPUT);
@@ -69,9 +61,11 @@ void setup() {
   LAST_CHECK_MILLIES = millis() - ohoco.config.checkInterval;
   CHANGE_COUNTER = 1;
 
-  ohoco.wifi_connect();
+  // ----------------------------------------
   
-  if (ohoco.config.useMQTT == 1) {
+  ohoco.wifi_connect();
+
+  if ((ohoco.config.useMQTT == 1) || (ohoco.config.controller_port == 1883)) {
     ohoco.mqtt_setup();
     ohoco.mqtt_connect();
   }
@@ -80,8 +74,8 @@ void setup() {
   }
 
   ohoco.register_device(SKETCH_VERSION);
-  ohoco.register_sensor("car", "car");
-  ohoco.register_sensor("garage", "garage");
+  ohoco.register_sensor("car", "car", "");
+  ohoco.register_sensor("garage", "garage", "");
 
   ohoco.on_message(ohoco_callback);
   
@@ -118,29 +112,29 @@ void loop() {
 
     if (THIS_CAR_STATUS != LAST_CAR_STATUS) {
       if (THIS_CAR_STATUS == CAR_IS_HOME) {
-        ohoco.debug("HCSR04 -> found object");
+        ohoco.println("HCSR04 -> found object");
 
         ohoco.trigger_activate("GAR-CAR-HOME");
-        ohoco.set_sensor_value("car", "home", "");
+        ohoco.sensor_update("car", "home");
         
         if (THIS_DOOR_STATUS == DOOR_IS_OPEN) {
-          ohoco.set_sensor_value("garage", "home-open", "");
+          ohoco.sensor_update("garage", "home-open");
         }
         else {
-          ohoco.set_sensor_value("garage", "home-closed", "");
+          ohoco.sensor_update("garage", "home-closed");
         }
       }
       else {
-        ohoco.debug("HCSR04 -> no object");
+        ohoco.println("HCSR04 -> no object");
 
         ohoco.trigger_activate("GAR-CAR-AWAY");
-        ohoco.set_sensor_value("car", "away", "");
+        ohoco.sensor_update("car", "away");
         
         if (THIS_DOOR_STATUS == DOOR_IS_OPEN) {
-          ohoco.set_sensor_value("garage", "away-open", "");
+          ohoco.sensor_update("garage", "away-open");
         }
         else {
-          ohoco.set_sensor_value("garage", "away-closed", "");
+          ohoco.sensor_update("garage", "away-closed");
         }
       }
     }
@@ -149,25 +143,25 @@ void loop() {
         ohoco.trigger_activate("GAR-DOOR-OPEN");
         
         if (THIS_CAR_STATUS == CAR_IS_HOME) {
-          ohoco.set_sensor_value("garage", "home-open", "");
+          ohoco.sensor_update("garage", "home-open");
         }
         else {
-          ohoco.set_sensor_value("garage", "away-open", "");
+          ohoco.sensor_update("garage", "away-open");
         }
       }
       else {
         ohoco.trigger_activate("GAR-DOOR-CLOSED");
         
         if (THIS_CAR_STATUS == CAR_IS_HOME) {
-          ohoco.set_sensor_value("garage", "home-closed", "");
+          ohoco.sensor_update("garage", "home-closed");
         }
         else {
-          ohoco.set_sensor_value("garage", "away-closed", "");
+          ohoco.sensor_update("garage", "away-closed");
         }
       }
     }
     else {
-      ohoco.debug("HCSR04 -> no change");
+      ohoco.println("HCSR04 -> no change");
     }
 
     ohoco.led_flash(2, 100);
@@ -176,18 +170,18 @@ void loop() {
     LAST_DOOR_STATUS = THIS_DOOR_STATUS;
     LAST_CHECK_MILLIES = millis();
   }
-
-  delay(1000);
 }
 
 void send_distance(long dist_in_cm) {
   char cm[12] = {0};
   ltoa(dist_in_cm, cm, 10);
-  ohoco.set_sensor_value("DEBUG", cm, " cm");
+  ohoco.sensor_update("DEBUG", cm);
 }
 
-void ohoco_callback(String cmd) {
-  if (cmd == "DEBUG") {
+void ohoco_callback(String topic, String payload) {
+  ohoco.println("ohoco_callback (" + payload + ") on (" + topic + ")");
+
+  if (payload == "DEBUG") {
     long distance1 = HCSR04_read_distance();
     send_distance(distance1);
   }

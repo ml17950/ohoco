@@ -1,11 +1,12 @@
 #ifndef OHoCo_h
 #define OHoCo_h
 
-#define MQTT_VERSION MQTT_VERSION_3_1_1
+// Please define MQTT_MAX_PACKET_SIZE to 256 in PubSubClient.h
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
+#include <ESP8266httpUpdate.h>
 #include <PubSubClient.h>
 #include <EEPROM.h>
 #include <WiFiUdp.h>
@@ -53,19 +54,17 @@ class OHoCo {
 
     void debugmode(int dbgmode);
     void debugmode(int dbgmode, int ledpin);
-    void debug(String msg);
-    void debug(int msg);
-    void debug(long msg);
-    void debug(float msg);
-    void debuginline(String msg);
-    void debuginline(int msg);
+    void println(String msg);
+    void println(int msg);
+    void println(long msg);
+    void println(float msg);
+    void print(String msg);
+    void print(int msg);
 
     void led_on();
     void led_off();
     void led_flash(int cnt, int delayms);
     
-//    void wifi_config(const char* WIFI_NAME, const char* WIFI_SSID, const char* WIFI_PASS);
-//    void wifi_config(const char* WIFI_NAME, const char* WIFI_SSID, const char* WIFI_PASS, const char* WIFI_IP, const char* WIFI_DNS, const char* WIFI_GATEWAY);
     void wifi_connect();
     void wifi_disconnect();
     bool wifi_connected();
@@ -74,6 +73,7 @@ class OHoCo {
     void http_publish(char* topic, char* payload);
 
     void mqtt_setup();
+    void mqtt_setup(const char* willTopic, const char* willMessage, uint8_t willQos, boolean willRetain);
     void mqtt_connect();
     void mqtt_disconnect();
     bool mqtt_connected();
@@ -83,15 +83,21 @@ class OHoCo {
 
     void keepalive();
     void send_alive_ping();
+    void send_connect_msg();
     void send_log(char* msg);
     
     void register_device(const char* sketch_version);
-    void register_sensor(char* sensor_name, char* sensor_type);
+    void register_device(const char* sketch_version, int timeout);
+    void register_sensor(char* sensor_name, char* sensor_type, char* sensor_unit);
     void register_switch(char* switch_name, char* switch_type);
+    void register_notify(char* notify_name);
     
-    void set_sensor_value(char* sensor_name, char* sensor_value, char* sensor_unit);
+    void sensor_update(char* sensor_name, char* sensor_value);
+    void sensor_update(char* sensor_name, int sensor_value);
+    void sensor_update(char* sensor_name, float sensor_value, int precision);
     
     void trigger_activate(char* trigger_name);
+    void notify(char* notify_name, char* message);
 
     bool config_read();
     void config_write();
@@ -99,11 +105,13 @@ class OHoCo {
     void config_set(String cmd);
     void config_send();
     void config_display();
-    void config_command(String cmd);
+    void config_command(String topic, String command);
 
-    void on_message(void (*CallbackFunc)(String));
+    void on_message(void (*CallbackFunc)(String, String));
 
     void reboot();
+    void deepSleep_seconds(int seconds);
+    void deepSleep_minutes(int minutes);
 
   private:
     int           DEBUGMODE;
@@ -120,14 +128,19 @@ class OHoCo {
     int           _API_PORT;
     const char*   _API_USER;
     const char*   _API_PASS;
-    String        _MQTT_DEVICE_TOPIC;
+    const char*   _API_PATH;    const char*   _MQTT_WILL_TOPIC;
+    const char*   _MQTT_WILL_PAYLOAD;
+    uint8_t       _MQTT_WILL_QOS;
+    bool          _MQTT_WILL_RETAIN;    String        _MQTT_DEVICE_TOPIC;
     bool          _USE_MQTT;
+    int           _ALIVE_PING_INTERVAL;
     bool          _is_wifi_connected;
     bool          _is_mqtt_connected;
-    void          (*_CallbackFunction)(String);
+    void          (*_CallbackFunction)(String, String);
     const char*   _SKETCH_VERSION;
     
-    String macToStr(const uint8_t* mac);
+    String        macToStr(const uint8_t* mac);
+    void          ota_update();
 };
 
 #endif

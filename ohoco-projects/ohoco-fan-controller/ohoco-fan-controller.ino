@@ -5,11 +5,15 @@ ADC_MODE(ADC_VCC);
 #include <OHoCo.h>
 #include "./credentials.h"
 
-const char*  SKETCH_VERSION     = "2018-07-23";
+const char*  SKETCH_VERSION     = "18.10.06";
 const char*  WIFI_DEVICE_NAME   = "ESP-Fan-Controller";
 
 #define IR_SEND_PIN             D6
 #define DS18B20_PIN             D3
+#define SENSOR_PIN              D2
+#define SOMEONE_IS_HERE         1
+#define NOBODY_IS_HERE          0
+#define MS_BETWEEN_DETECTIONS   3200
 
 OneWire oneWire(DS18B20_PIN);  // on pin 10 (a 4.7K resistor is necessary)
 DallasTemperature DS18B20(&oneWire);  // Pass our oneWire reference to Dallas Temperature. 
@@ -22,9 +26,13 @@ ESP8266WebServer myWebServer(80);
 #include "./honeywell_ho_5500re.h"
 
 // global variables
-unsigned long LAST_CHECK_MILLIES;
+unsigned long LAST_TEMP_CHECK_MILLIES;
+unsigned long LAST_MOTION_CHECK_MILLIES;
 int example_counter = 0;
 float LAST_TEMPERATURE;
+int LAST_DETECTION_STATE;
+int DETECTION_COUNTER;
+int MOTION_COUNTER;
 
 void setup() {
   ohoco.debugmode(LED);
@@ -42,35 +50,36 @@ void setup() {
     strcpy(ohoco.config.controller_user, CONTROLLER_USER);
     strcpy(ohoco.config.controller_pass, CONTROLLER_PASS);
     ohoco.config.useMQTT               = 0;
-    ohoco.config.checkInterval         = 60000;
-    ohoco.config.minValue              = 1;
-    ohoco.config.maxValue              = 9999;
+    ohoco.config.checkInterval         = 600000; // 10 min.
+    ohoco.config.minValue              = 2;      // number of positive detections
+    ohoco.config.maxValue              = 300000; // 5 min.
     strcpy(ohoco.config.dataTopic,       "");
-    strcpy(ohoco.config.inTrigger,       "");
-    strcpy(ohoco.config.outTrigger,      "");
-    strcpy(ohoco.config.genericValue01,  "");
-    strcpy(ohoco.config.genericValue02,  "");
-    strcpy(ohoco.config.genericValue03,  "");
-    strcpy(ohoco.config.genericValue04,  "");
-    strcpy(ohoco.config.genericValue05,  "");
-    strcpy(ohoco.config.genericValue06,  "");
-    strcpy(ohoco.config.genericValue07,  "");
-    strcpy(ohoco.config.genericValue08,  "");
-    strcpy(ohoco.config.genericValue09,  "");
-    strcpy(ohoco.config.genericValue10,  "");
+    strcpy(ohoco.config.inTrigger,       "SOMEONE-HERE");
+    strcpy(ohoco.config.outTrigger,      "NOBODY-HERE");
   }
   ohoco.config_display();
 
+  // ----------------------------------------
+  
   pinMode(IR_SEND_PIN, OUTPUT);
   digitalWrite(IR_SEND_PIN, HIGH);
 
+  pinMode(SENSOR_PIN, INPUT);
+
   init_software_pwm(38);
 
-  LAST_CHECK_MILLIES = millis() - 15000; //  - ohoco.config.checkInterval;
+  LAST_TEMP_CHECK_MILLIES = millis() - 15000;
+  LAST_MOTION_CHECK_MILLIES = millis() - 15000;
+
+  DETECTION_COUNTER = ohoco.config.maxValue;
+  MOTION_COUNTER = 0;
+  LAST_DETECTION_STATE = NOBODY_IS_HERE;
+
+  // ----------------------------------------
   
   ohoco.wifi_connect();
   
-  if (ohoco.config.useMQTT == 1) {
+  if ((ohoco.config.useMQTT == 1) || (ohoco.config.controller_port == 1883)) {
     ohoco.mqtt_setup();
     ohoco.mqtt_connect();
   }
@@ -80,7 +89,8 @@ void setup() {
   
   ohoco.register_device(SKETCH_VERSION);
   ohoco.register_switch("fan", "fan");
-  ohoco.register_sensor("fantemp", "temperature");
+  ohoco.register_sensor("fantemp", "temperature", "°C");
+  ohoco.register_sensor("human", "presence", "");
 
   ohoco.on_message(ohoco_callback);
 
@@ -90,7 +100,7 @@ void setup() {
   myWebServer.onNotFound(handleNotFoundRequest);  // Handle when a client requests an unknown URI for example something other than "/")
   ///////////////////////////// End of Request commands
   myWebServer.begin();
-  ohoco.debug("HTTP server started");
+  ohoco.println("HTTP server started");
   
   ohoco.setup_ready();
 }
@@ -99,8 +109,10 @@ void loop() {
   ohoco.keepalive();
   myWebServer.handleClient();
 
-  if ((millis() - LAST_CHECK_MILLIES) > ohoco.config.checkInterval) {
-    ohoco.debug("reading DS18B20...");
+  unsigned long now = millis();
+
+  if ((now - LAST_TEMP_CHECK_MILLIES) > ohoco.config.checkInterval) {
+    ohoco.println("reading DS18B20...");
     ohoco.led_flash(2, 100);
 
     float temperature = 0;
@@ -112,18 +124,84 @@ void loop() {
         char TemperatureCString[6];
         dtostrf(temperature, 2, 1, TemperatureCString);
         ConvertPointToComma(TemperatureCString);
-        ohoco.set_sensor_value("fantemp", TemperatureCString, " °C");
+        ohoco.sensor_update("fantemp", TemperatureCString);
         LAST_TEMPERATURE = temperature;
       }
       else {
-        ohoco.debug("same Temperature is " + String(temperature) + " °C");
+        ohoco.println("same Temperature is " + String(temperature) + " °C");
       }
     }
     else {
-      ohoco.debuginline("reading DS18B20 failed");
+      ohoco.print("reading DS18B20 failed");
     }
 
-    LAST_CHECK_MILLIES = millis();
+    LAST_TEMP_CHECK_MILLIES = millis();
+  }
+
+  if ((now - LAST_MOTION_CHECK_MILLIES) > MS_BETWEEN_DETECTIONS) {
+    int THIS_DETECTION_STATE = digitalRead(SENSOR_PIN);
+    
+//    ohoco.debuginline("DC: ");
+//    ohoco.debuginline(DETECTION_COUNTER);
+//    ohoco.debuginline(" / MC: ");
+//    ohoco.debuginline(MOTION_COUNTER);
+//    ohoco.debuginline(" / LS: ");
+//    ohoco.debuginline(LAST_DETECTION_STATE);
+//    ohoco.debuginline(" / TS: ");
+//    ohoco.debug(THIS_DETECTION_STATE);
+
+    if (THIS_DETECTION_STATE == SOMEONE_IS_HERE) {
+      if (LAST_DETECTION_STATE == SOMEONE_IS_HERE) {
+        DETECTION_COUNTER = ohoco.config.maxValue;
+        ohoco.print("someone still here             - reset DETECTION_COUNTER to ");
+        ohoco.println(DETECTION_COUNTER);
+      }
+      else {
+        MOTION_COUNTER++;
+
+        if (MOTION_COUNTER >= ohoco.config.minValue) {
+          ohoco.println("new detection (2 times)        - fire TRIGGER & set STATUS");
+          
+          ohoco.trigger_activate(ohoco.config.inTrigger);
+          ohoco.sensor_update("human", "here");
+          ohoco.led_on();
+
+          DETECTION_COUNTER = ohoco.config.maxValue;
+          MOTION_COUNTER = 1;
+          LAST_DETECTION_STATE = SOMEONE_IS_HERE;
+        }
+        else {
+          ohoco.println("new detection                  - check TWICE");
+        }
+      }
+    }
+    else {
+      if (LAST_DETECTION_STATE == SOMEONE_IS_HERE) {
+        DETECTION_COUNTER -= MS_BETWEEN_DETECTIONS;
+        ohoco.print("someone was here               - decrease DETECTION_COUNTER to ");
+        ohoco.println(DETECTION_COUNTER);
+
+        if (DETECTION_COUNTER <= 0) {
+          ohoco.println("someone was here for some time - fire TRIGGER & set STATUS");
+          
+          ohoco.trigger_activate(ohoco.config.outTrigger);
+          ohoco.sensor_update("human", "away");
+          ohoco.led_off();
+
+          LAST_DETECTION_STATE = NOBODY_IS_HERE;
+          DETECTION_COUNTER = 0;
+        }
+      }
+      else {
+        ohoco.println("still nobody here");
+        if (MOTION_COUNTER > 0) {
+          ohoco.println("reset MOTION_COUNTER");
+          MOTION_COUNTER = 0;
+        }
+      }
+    }
+    
+    LAST_MOTION_CHECK_MILLIES = millis();
   }
 }
 
@@ -134,11 +212,11 @@ void executeCommand(String cmd) {
 
   if (cmd == "fan:on") {
     HO5500RE_POWER();
-    ohoco.set_sensor_value("fan", "on", "");
+    ohoco.sensor_update("fan", "on");
   }
   else if (cmd == "fan:off") {
     HO5500RE_POWER();
-    ohoco.set_sensor_value("fan", "off", "");
+    ohoco.sensor_update("fan", "off");
   }
   else if (cmd == "fan:speed") {
     HO5500RE_SPEED();
@@ -162,14 +240,14 @@ void executeCommand(String cmd) {
     
     dtostrf(temperature, 2, 1, TemperatureCString);
     
-    ohoco.set_sensor_value("fantemp", TemperatureCString, " °C");
+    ohoco.sensor_update("fantemp", TemperatureCString);
   }
 
   ohoco.led_flash(3, 50);
 }
 
 void handleRootRequest() {
-  ohoco.debug("handleRootRequest");
+  ohoco.println("handleRootRequest");
 
   if (myWebServer.args() > 0) {
     String cmd;
@@ -215,14 +293,14 @@ void handleRootRequest() {
 }
 
 void handleNotFoundRequest(){
-  ohoco.debug("handleNotFoundRequest: " + myWebServer.uri());
+  ohoco.println("handleNotFoundRequest: " + myWebServer.uri());
   myWebServer.send(404, "text/plain", "404: Not found"); // Send HTTP status 404 (Not Found) when there's no handler for the URI in the request
 }
 
-void ohoco_callback(String cmd) {
-  ohoco.debug("callback: " + cmd);
+void ohoco_callback(String topic, String payload) {
+  ohoco.println("ohoco_callback (" + payload + ") on (" + topic + ")");
 
-  executeCommand(cmd);
+  executeCommand(payload);
 }
 
 void ConvertPointToComma(char* buf) {

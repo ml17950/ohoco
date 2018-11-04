@@ -16,8 +16,8 @@ ohoco	KEYWORD1
 initialize			KEYWORD2
 setup_ready			KEYWORD2
 debugmode			KEYWORD2
-debug				KEYWORD2
-debuginline			KEYWORD2
+println				KEYWORD2
+print				KEYWORD2
 wifi_config			KEYWORD2
 wifi_connect		KEYWORD2
 wifi_disconnect		KEYWORD2
@@ -28,19 +28,23 @@ mqtt_setup			KEYWORD2
 mqtt_connect		KEYWORD2
 mqtt_disconnect		KEYWORD2
 mqtt_connected		KEYWORD2
+mqtt_callback		KEYWORD2
 mqtt_subscribe		KEYWORD2
 mqtt_publish		KEYWORD2
 keepalive			KEYWORD2
 send_alive_ping		KEYWORD2
+send_connect_msg	KEYWORD2
 send_log			KEYWORD2
 register_device		KEYWORD2
 register_sensor		KEYWORD2
 register_switch		KEYWORD2
-set_sensor_value	KEYWORD2
+register_notify		KEYWORD2
+sensor_update		KEYWORD2
 switch_on			KEYWORD2
 switch_off			KEYWORD2
 switch_toggle		KEYWORD2
 trigger_activate	KEYWORD2
+notify				KEYWORD2
 led_on				KEYWORD2
 led_off				KEYWORD2
 led_flash			KEYWORD2
@@ -53,6 +57,8 @@ config_display		KEYWORD2
 config_command		KEYWORD2
 on_message			KEYWORD2
 reboot				KEYWORD2
+deepSleep_seconds	KEYWORD2
+deepSleep_minutes	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)

@@ -1,7 +1,7 @@
 // RCT = Remote Control Transmitter
 
 void turnPowerSocketON(String socket_id) {
-  ohoco.debug("RCT >> turnPowerSocketON => " + socket_id);
+  ohoco.println("433S >> turnPowerSocketON => " + socket_id);
 
        if (socket_id == "socket1") { myRCSendSwitch.sendTriState("FFFF00FFFF0F"); }
   else if (socket_id == "socket2") { myRCSendSwitch.sendTriState("FFFF0F0FFF0F"); }
@@ -17,11 +17,15 @@ void turnPowerSocketON(String socket_id) {
 
   else if (socket_id == "socket10") { myRCSendSwitch.send("001110101000000100000001"); }
 
-  else { ohoco.debug("unknown socket"); }
+  else if (socket_id == "socketA") { ritter_socket_on(1); }
+  else if (socket_id == "socketB") { ritter_socket_on(2); }
+  else if (socket_id == "socketC") { ritter_socket_on(3); }
+
+  else { ohoco.println("unknown socket"); }
 }
 
 void turnPowerSocketOFF(String socket_id) {
-  ohoco.debug("RCT >> turnPowerSocketOFF => " + socket_id);
+  ohoco.println("433S >> turnPowerSocketOFF => " + socket_id);
 
        if (socket_id == "socket1") { myRCSendSwitch.sendTriState("FFFF00FFFFF0"); }
   else if (socket_id == "socket2") { myRCSendSwitch.sendTriState("FFFF0F0FFFF0"); }
@@ -37,7 +41,11 @@ void turnPowerSocketOFF(String socket_id) {
 
   else if (socket_id == "socket10") { myRCSendSwitch.send("001110101000000100000100"); }
 
-  else { ohoco.debug("unknown socket"); }
+  else if (socket_id == "socketA") { ritter_socket_off(1); }
+  else if (socket_id == "socketB") { ritter_socket_off(2); }
+  else if (socket_id == "socketC") { ritter_socket_off(3); }
+
+  else { ohoco.println("unknown socket"); }
 }
 
 static char * decimal2binary(unsigned long Dec, unsigned int bitLength) {
@@ -89,7 +97,7 @@ void PowerSocketCommandReceived(unsigned long decimal, unsigned int length) {
   char* cAction = "";
   bool updStatus = false;
 
-  ohoco.debug("RCT >> PowerSocketCommandReceived => " + (String)t);
+  ohoco.println("433R >> PowerSocketCommandReceived => " + (String)t);
   
   if      (strcmp(t, "FFFF00FFFF0F") == 0) { cSocket = "socket1"; cAction = "on";  updStatus = true; }
   else if (strcmp(t, "FFFF00FFFFF0") == 0) { cSocket = "socket1"; cAction = "off"; updStatus = true; }
@@ -111,12 +119,12 @@ void PowerSocketCommandReceived(unsigned long decimal, unsigned int length) {
   else if (strcmp(t, "FFF000FFFFF0") == 0) { cSocket = "socket9"; cAction = "off"; updStatus = true; }
 
   if (updStatus) {
-//    ohoco.debuginline("selectSocket  cSocket: ");
-//    ohoco.debug(cSocket);
-//    ohoco.debuginline("selectSocket  cAction: ");
-//    ohoco.debug(cAction);
+//    ohoco.print("selectSocket  cSocket: ");
+//    ohoco.println(cSocket);
+//    ohoco.print("selectSocket  cAction: ");
+//    ohoco.println(cAction);
 
-    ohoco.set_sensor_value(cSocket, cAction, "");
+    ohoco.sensor_update(cSocket, cAction);
   
     ohoco.led_flash(4, 100);
   }

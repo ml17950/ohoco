@@ -4,17 +4,19 @@ ADC_MODE(ADC_VCC);
 #include <OHoCo.h>
 #include "./credentials.h"
 
-const char*  SKETCH_VERSION     = "2018-07-23";
+const char*  SKETCH_VERSION     = "18.10.06";
 const char*  WIFI_DEVICE_NAME   = "ESP-RC-Controller";
 
-#define RC_PIN                  D5
+#define TRANSMITTER_PIN         D5
+#define RECEIVER_PIN            D6
 
 OHoCo ohoco;
 RCSwitch myRCSendSwitch = RCSwitch();
 RCSwitch myRCRecvSwitch = RCSwitch();
 
-unsigned long ulRequestCount;
+bool enableReceiving;
 
+#include "./ritter_8341c.h"
 #include "./rc_functions.h"
 
 void setup() {
@@ -39,30 +41,25 @@ void setup() {
     strcpy(ohoco.config.dataTopic,       "");
     strcpy(ohoco.config.inTrigger,       "");
     strcpy(ohoco.config.outTrigger,      "");
-    strcpy(ohoco.config.genericValue01,  "");
-    strcpy(ohoco.config.genericValue02,  "");
-    strcpy(ohoco.config.genericValue03,  "");
-    strcpy(ohoco.config.genericValue04,  "");
-    strcpy(ohoco.config.genericValue05,  "");
-    strcpy(ohoco.config.genericValue06,  "");
-    strcpy(ohoco.config.genericValue07,  "");
-    strcpy(ohoco.config.genericValue08,  "");
-    strcpy(ohoco.config.genericValue09,  "");
-    strcpy(ohoco.config.genericValue10,  "");
   }
   ohoco.config_display();
 
-  ohoco.debug("SYS >> Initialize RCSwitch");
-  myRCSendSwitch.enableTransmit(RC_PIN);  // Required set output pin
+  // ----------------------------------------
+  
+  ohoco.println("SYS  >> Initialize RCSwitch");
+  myRCSendSwitch.enableTransmit(TRANSMITTER_PIN);  // Required set output pin
   myRCSendSwitch.setProtocol(1);          // Optional set protocol (default is 1, will work for most outlets)
   myRCSendSwitch.setPulseLength(313);     // Optional set pulse length.
 //  myRCSendSwitch.setRepeatTransmit(3);    // Optional set number of transmission repetitions.
 
-  myRCRecvSwitch.enableReceive(D6);
+  myRCRecvSwitch.enableReceive(RECEIVER_PIN);
+  enableReceiving = true;
 
+  // ----------------------------------------
+  
   ohoco.wifi_connect();
   
-  if (ohoco.config.useMQTT == 1) {
+  if ((ohoco.config.useMQTT == 1) || (ohoco.config.controller_port == 1883)) {
     ohoco.mqtt_setup();
     ohoco.mqtt_connect();
   }
@@ -79,7 +76,10 @@ void setup() {
   ohoco.register_switch("socket6", "light");
   ohoco.register_switch("socket7", "light");
   ohoco.register_switch("socket8", "light");
-  ohoco.register_switch("socket9", "light");
+  //ohoco.register_switch("socket9", "light");
+  ohoco.register_switch("socketA", "light");
+  ohoco.register_switch("socketB", "light");
+  ohoco.register_switch("socketC", "light");
 
   ohoco.on_message(ohoco_callback);
   
@@ -91,18 +91,35 @@ void loop() {
 //  myWebServer.handleClient();
 
   if (myRCRecvSwitch.available()) {
-    PowerSocketCommandReceived(myRCRecvSwitch.getReceivedValue(), myRCRecvSwitch.getReceivedBitlength());
+    if (enableReceiving)
+      PowerSocketCommandReceived(myRCRecvSwitch.getReceivedValue(), myRCRecvSwitch.getReceivedBitlength());
     myRCRecvSwitch.resetAvailable();
   }
 }
 
-void ohoco_callback(String cmd) {
-//  ohoco.debug("callback: " + cmd);
+void ohoco_callback(String topic, String payload) {
+  ohoco.println("callback: " + topic + " -> " + payload);
 
-  int pos = cmd.indexOf(':');
-  String sSocket = cmd.substring(0, pos);
-  String sAction = cmd.substring(pos+1);
+  // disable receiving until sending is complete
+  myRCRecvSwitch.disableReceive();
+
+//  ohoco.sensor_update("DEBUG", payload.c_str());
   
+  int pos;
+  String sSocket;
+  String sAction;
+  
+  if (topic == "UDP") {
+    pos = payload.indexOf(':');
+    sSocket = payload.substring(0, pos);
+    sAction = payload.substring(pos+1);
+  }
+  else {
+    pos = topic.lastIndexOf('/');
+    sSocket = topic.substring(pos + 1);
+    sAction = payload;
+  }
+
   if (sAction == "on") {
     turnPowerSocketON(sSocket);
   }
@@ -110,13 +127,17 @@ void ohoco_callback(String cmd) {
     turnPowerSocketOFF(sSocket);
   }
 
-//  char cSocket[strlen(sSocket.c_str())+1];
-//  sSocket.toCharArray(cSocket, strlen(sSocket.c_str())+1);
-//
-//  char cAction[strlen(sAction.c_str())+1];
-//  sAction.toCharArray(cAction, strlen(sAction.c_str())+1);
-//  
-//  ohoco.set_sensor_value(cSocket, cAction, "");
+  // set new status on controller
+  char cSocket[strlen(sSocket.c_str())+1];
+  sSocket.toCharArray(cSocket, strlen(sSocket.c_str())+1);
+  char cAction[strlen(sAction.c_str())+1];
+  sAction.toCharArray(cAction, strlen(sAction.c_str())+1);
+  ohoco.sensor_update(cSocket, cAction);
+
+  delay(500);
+  
+  // re-enable receiving
+  myRCRecvSwitch.enableReceive(RECEIVER_PIN);
 
   ohoco.led_flash(3, 50);
 }
