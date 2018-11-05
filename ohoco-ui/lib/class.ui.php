@@ -1,4 +1,4 @@
-<?php	// last change: 2018-10-01
+<?php	// last change: 2018-11-05
 class clsUserInterface {
 	var $ohoco;
 	var $home;
@@ -170,16 +170,44 @@ class clsUserInterface {
 			case 'on':
 			case 'open':
 			case 'home':
+			case 'working':
 				return 'is-on';
 				break;
 			case 'off':
 			case 'closed':
 			case 'away':
+			case 'charging':
 				return 'is-off';
 				break;
 			default:
 				return 'is-val';
 		}
+	}
+
+	function is_chart_enabled($type, $value) {
+		switch ($type) {
+			case 'temperature':
+			case 'humidity':
+			case 'lightintensity':
+			case 'voltage':
+			case 'currency':
+				//echo "\n<!-- TYP ",$type," -->\n";
+				return true;
+		}
+		switch ($value) {
+			case 'on':
+			case 'off':
+			case 'open':
+			case 'closed':
+			case 'home':
+			case 'away':
+			case 'working':
+			case 'charging':
+				//echo "\n<!-- VAL ",$value," -->\n";
+				return true;
+		}
+		//echo "\n<!-- TYP ",$type," / VAL ",$value," -->\n";
+		return true;
 	}
 
 	function get_sonsors_by_name() {

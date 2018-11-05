@@ -127,4 +127,14 @@
 		default:
 			echo "ERR:unknown view: ",$view;
 	}
+
+//// 	$payload = time();
+// 	$payload = 'display:text';
+// 	$url = "http://192.168.151.20/ohoco/api/ohoco/register/notify/display";
+// 	$postdata = http_build_query(array('payload' => $payload));
+// 	$opts = array('http' => array('method'  => 'POST', 'header'  => 'Content-type: application/x-www-form-urlencoded', 'content' => $postdata));
+// 	$context = stream_context_create($opts);
+// 	$data = file_get_contents($url, false, $context);
+// 	
+// 	echo $data;
 ?>

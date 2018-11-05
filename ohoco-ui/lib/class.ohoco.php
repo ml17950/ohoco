@@ -665,5 +665,32 @@ unset($this->config['switch'][$switch_id]);
 // 			echo $new_status;
 		}
 	}
+
+	function helper_status2number($status) {
+// 		echo "((",$status,"))&rarr;";
+		switch ($status) {
+			case 'on':
+			case 'yes':
+			case 'open':
+			case 'home':
+			case 'here':
+			case 'working':
+				$ret = 1;
+				break;
+			case 'off':
+			case 'no':
+			case 'closed':
+			case 'away':
+			case 'idle':
+			case 'charging':
+				$ret = 0;
+				break;
+			default:
+				$ret = str_replace(',','.',$status);
+				$ret = preg_replace("/[^0-9.]/", '', $ret);
+		}
+// 		echo "[[",$ret,"]]";
+		return floatval($ret);
+	}
 }
 ?>

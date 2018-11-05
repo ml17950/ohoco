@@ -1,4 +1,4 @@
-// last change: 2018-10-04
+// last change: 2018-11-05
 
 var lastView = 0;
 
@@ -189,7 +189,7 @@ var ohocochart = {
 			});
 			
 			$.ajax({
-				url:  'api/ui/chart/'+id, //?'+now,
+				url:  'rpc/json/chart/?id='+id,
 				data: 'v=0',
 				type: 'POST',
 				success: function(data) {
