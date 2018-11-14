@@ -3,7 +3,7 @@ ADC_MODE(ADC_VCC);
 #include "OHoCo.h"
 #include "./credentials.h"
 
-const char*  SKETCH_VERSION     = "18.10.05";
+const char*  SKETCH_VERSION     = "18.11.14";
 const char*  WIFI_DEVICE_NAME   = "OHoCo-Libary-Test";
 
 // setup libaries
@@ -17,7 +17,7 @@ void setup() {
   //ohoco.debugmode(LED);
   ohoco.debugmode(SERIAL);
 
-  ohoco.initialize(false);
+  ohoco.initialize();
   
 //  ohoco.config_reset();
 

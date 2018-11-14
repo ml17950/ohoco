@@ -1,6 +1,6 @@
 #include "OHoCo.h"
 
-const char*  OHOCO_VERSION     = "18.10.06";
+const char*  OHOCO_VERSION     = "18.11.14";
 
 WiFiClient WiFiClient;
 PubSubClient MQTTClient(WiFiClient);
@@ -17,6 +17,7 @@ OHoCo::OHoCo() {
   this->_CallbackFunction = NULL;
   this->_MQTT_WILL_QOS = -1;
   this->_ALIVE_PING_INTERVAL = 3600000;
+  this->_API_PATH = "ohoco";
 }
 
 String macToStr(const uint8_t* mac) {
@@ -200,7 +201,6 @@ void OHoCo::http_setup() {
   this->_API_PORT = this->config.controller_port;
   this->_API_USER = this->config.controller_user;
   this->_API_PASS = this->config.controller_pass;
-  this->_API_PATH = "ohoco";
 
   this->println("UDP  >> Starting UDP Server on port 18266");
   UdpServer.begin(18266);
@@ -684,19 +684,20 @@ void OHoCo::register_switch(char* switch_name, char* switch_type) {
   this->println("API  >> Register switch " + String(switch_name));
 
   char topic[128] = {0};
+  char pload[128] = {0};
+
+  sprintf(pload, "%s:%s", switch_type, this->_CLIENT_ID.c_str());
 
   if (this->_USE_MQTT) {
     sprintf(topic, "ohoco/sensor/%s/type", switch_name);
     this->mqtt_publish(topic, switch_type, false);
     
     sprintf(topic, "ohoco/switch/%s", switch_name);
-    this->mqtt_publish(topic, "off", false);
+    this->mqtt_publish(topic, pload, false);
 
     this->mqtt_subscribe(topic);
   }
   else {
-    char pload[128] = {0};
-    sprintf(pload, "%s:%s", switch_type, this->_CLIENT_ID.c_str());
     sprintf(topic, "switch/register/?id=%s", switch_name);
     this->http_publish(topic, pload);
   }
@@ -912,35 +913,67 @@ void OHoCo::config_send() {
   this->println("API  >> Send config to controller");
 
   String payload;
-  // fill payload with data as json array
-  payload  = "{";
-  payload += "\"din\":\"" + String(this->config.displayName) + "\",";
-  payload += "\"wid\":\"" + String(this->config.wifi_ssid) + "\",";
-  payload += "\"wpw\":\"" + String(this->config.wifi_pass) + "\",";
-  payload += "\"cip\":\"" + String(this->config.controller_ip) + "\",";
-  payload += "\"cpo\":\"" + String(this->config.controller_port) + "\",";
-  payload += "\"cus\":\"" + String(this->config.controller_user) + "\",";
-  payload += "\"cpw\":\"" + String(this->config.controller_pass) + "\",";
-  payload += "\"mqt\":\"" + String(this->config.useMQTT) + "\",";
-  payload += "\"chk\":\"" + String(this->config.checkInterval) + "\",";
-  payload += "\"min\":\"" + String(this->config.minValue) + "\",";
-  payload += "\"max\":\"" + String(this->config.maxValue) + "\",";
-  payload += "\"itr\":\"" + String(this->config.inTrigger) + "\",";
-  payload += "\"otr\":\"" + String(this->config.outTrigger) + "\"";
-  payload += "}";
   
   char topic[128] = "ohoco/config/";
   strcat(topic, this->_CLIENT_ID.c_str());
   
-  char pload[strlen(payload.c_str())+1];
-  payload.toCharArray(pload, strlen(payload.c_str())+1);
-  
   if (this->_USE_MQTT) {
-    sprintf(topic, "ohoco/device/%s/config", this->_CLIENT_ID.c_str());
+    sprintf(topic, "ohoco/config/%s", this->_CLIENT_ID.c_str());
+    char pload[128] = {0};
+
+    payload  = "{";
+    payload += "\"din\":\"" + String(this->config.displayName) + "\",";
+    payload += "\"wid\":\"" + String(this->config.wifi_ssid) + "\",";
+    payload += "\"wpw\":\"" + String(this->config.wifi_pass) + "\"";
+    payload += "}";
+    
+    payload.toCharArray(pload, strlen(payload.c_str())+1);
+    this->mqtt_publish(topic, pload, false);
+
+    payload  = "{";
+    payload += "\"cip\":\"" + String(this->config.controller_ip) + "\",";
+    payload += "\"cpo\":\"" + String(this->config.controller_port) + "\",";
+    payload += "\"cus\":\"" + String(this->config.controller_user) + "\",";
+    payload += "\"cpw\":\"" + String(this->config.controller_pass) + "\"";
+    payload += "}";
+    
+    payload.toCharArray(pload, strlen(payload.c_str())+1);
+    this->mqtt_publish(topic, pload, false);
+
+    payload  = "{";
+    payload += "\"chk\":\"" + String(this->config.checkInterval) + "\",";
+    payload += "\"min\":\"" + String(this->config.minValue) + "\",";
+    payload += "\"max\":\"" + String(this->config.maxValue) + "\",";
+    payload += "\"itr\":\"" + String(this->config.inTrigger) + "\",";
+    payload += "\"otr\":\"" + String(this->config.outTrigger) + "\"";
+    payload += "}";
+    
+    payload.toCharArray(pload, strlen(payload.c_str())+1);
     this->mqtt_publish(topic, pload, false);
   }
   else {
     sprintf(topic, "device/config/?id=%s", this->_CLIENT_ID.c_str());
+    
+    // fill payload with data as json array
+    payload  = "{";
+    payload += "\"din\":\"" + String(this->config.displayName) + "\",";
+    payload += "\"wid\":\"" + String(this->config.wifi_ssid) + "\",";
+    payload += "\"wpw\":\"" + String(this->config.wifi_pass) + "\",";
+    payload += "\"cip\":\"" + String(this->config.controller_ip) + "\",";
+    payload += "\"cpo\":\"" + String(this->config.controller_port) + "\",";
+    payload += "\"cus\":\"" + String(this->config.controller_user) + "\",";
+    payload += "\"cpw\":\"" + String(this->config.controller_pass) + "\",";
+    payload += "\"mqt\":\"" + String(this->config.useMQTT) + "\",";
+    payload += "\"chk\":\"" + String(this->config.checkInterval) + "\",";
+    payload += "\"min\":\"" + String(this->config.minValue) + "\",";
+    payload += "\"max\":\"" + String(this->config.maxValue) + "\",";
+    payload += "\"itr\":\"" + String(this->config.inTrigger) + "\",";
+    payload += "\"otr\":\"" + String(this->config.outTrigger) + "\"";
+    payload += "}";
+
+    char pload[strlen(payload.c_str())+1];
+    payload.toCharArray(pload, strlen(payload.c_str())+1);
+
     this->http_publish(topic, pload);
   }
 }
