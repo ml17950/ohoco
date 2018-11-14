@@ -1,10 +1,10 @@
-<?php	// last change: 2018-11-05
+<?php	// last change: 2018-11-14
 
 	//error_reporting(E_ALL);
 	error_reporting(E_ALL & ~E_NOTICE);
 	ini_set('display_errors', 1);
 
-	define('VERSION', '2018-11-05');
+	define('VERSION', '2018-11-14');
 
 	define('ABSPATH', dirname(__FILE__));
 	define('CHMODMASK', 0775);

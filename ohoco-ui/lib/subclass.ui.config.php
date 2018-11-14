@@ -1,4 +1,4 @@
-<?php	// last change: 2018-10-06
+<?php	// last change: 2018-11-14
 class clsConfigInterface {
 	var $ohoco;
 
@@ -93,7 +93,7 @@ class clsConfigInterface {
 		$config = $this->ohoco->config['device'][$device_id]['config'];
 
 		if (is_array($config) && (count($config) > 0)) {
-			if ((time() - $config['upd']) < 120) {
+			if ((time() - $config['upd']) < 60) {
 				$cfg_key_replacements = array(	'chk' => 'checkInterval',
 												'min' => 'minValue',
 												'max' => 'maxValue',

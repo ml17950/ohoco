@@ -1,4 +1,4 @@
-<?php	// last change: 2018-11-04
+<?php	// last change: 2018-11-14
 class clsOHoCo {
 	var $config;
 	var $log_items;
@@ -236,7 +236,8 @@ class clsOHoCo {
 			}
 			if (($type == 'uptime') || ($type == 'connect')) {
 				$this->config['device'][$device_id]['alive'] = time();
-				$this->config['device'][$device_id]['ip'] = $_SERVER['REMOTE_ADDR'];
+				if (!empty($_SERVER['REMOTE_ADDR']))
+					$this->config['device'][$device_id]['ip'] = $_SERVER['REMOTE_ADDR'];
 			}
 			$this->config_has_changed = true;
 		}
@@ -244,6 +245,7 @@ class clsOHoCo {
 	}
 
 	function device_set_config($device_id, $config_array) {
+		//echo __CLASS__.'::'.__FUNCTION__.'<br>';
 		$config_array['upd'] = time();
 		$this->config['device'][$device_id]['config'] = $config_array;
 		$this->config_has_changed = true;
@@ -265,7 +267,6 @@ class clsOHoCo {
 			$protocol = $this->config['device'][$device_id]['protocol'];
 			switch ($protocol) {
 				case 'MQTT':
-// TODO
 					include_once('class.mqtt.php');
 					$topic = 'ohoco/device/'.$device_id.'/callback';
 					$MQTT = new phpMQTT(MQTT_BROKER_ADDR, MQTT_BROKER_PORT, 'MqttPubRelay');
@@ -414,16 +415,24 @@ unset($this->config['switch'][$switch_id]);
 				$command = $switch_id.':on';
 				if ($this->device_send_udp_command($remote_ip, $remote_port, $command))
 					$this->log('config', $device_id, $command, $remote_ip.":".$remote_port);
-				else
+				else {
 					$this->log('config', $device_id, 'Cant create UDP socket');
-			//	usleep(500000);
+					return false;
+				}
 				break;
 			case 'HTTP':
 				$this->helper_switch_http($switch_id, 'on', $this->config['switch'][$switch_id]['on_url']);
 				usleep(500000);
 				break;
 			case 'MQTT':
-				// TODO
+				if ($this->helper_send_mqtt_message('ohoco/switch/'.$switch_id, 'on')) {
+					usleep(500000);
+					$this->log('status', $switch_id, 'on');
+				}
+				else {
+		    		$this->log('error', $switch_id, 'Cant connect to MQTT broker');
+		    		return false;
+		    	}
 				break;
 		}
 		return true;
@@ -448,7 +457,14 @@ unset($this->config['switch'][$switch_id]);
 				usleep(500000);
 				break;
 			case 'MQTT':
-				// TODO
+				if ($this->helper_send_mqtt_message('ohoco/switch/'.$switch_id, 'off')) {
+					usleep(500000);
+					$this->log('status', $switch_id, 'off');
+				}
+				else {
+		    		$this->log('error', $switch_id, 'Cant connect to MQTT broker');
+		    		return false;
+		    	}
 				break;
 		}
 		return true;
@@ -637,6 +653,17 @@ unset($this->config['switch'][$switch_id]);
 		$telegram = new clsTelegram(TELEGRAM_API_KEY);
 		$telegram->sendMessage(TELEGRAM_CHAT_ID, $message_to_send);
 		$this->log('notify', 'Telegram Message', 'sent');
+	}
+
+	function helper_send_mqtt_message($topic, $payload) {
+		include_once('class.mqtt.php');
+		$MQTT = new phpMQTT(MQTT_BROKER_ADDR, MQTT_BROKER_PORT, MQTT_CLIENT_NAME);
+		if ($MQTT->connect(true, NULL, MQTT_USERNAME, MQTT_PASSWORD)) {
+			$MQTT->publish($topic, $payload, 1, false);
+			$MQTT->close();
+			return true;
+		}
+		return false;
 	}
 
 	function helper_switch_http($switch_id, $new_status, $url) {
