@@ -1,4 +1,4 @@
-<?php	// last change: 2018-11-14
+<?php	// last change: 2018-11-26
 class clsConfigInterface {
 	var $ohoco;
 
@@ -47,13 +47,13 @@ class clsConfigInterface {
 				echo "<div class='device-sketch'><em>Sketch-Ver.</em><br>",$device['sketch'],"</div>";
 				echo "<div class='device-ohoco'><em>OHoCo-Ver.</em><br>",$device['ohoco'],"</div>";
 				if ((time() - $last_ping_dt) > intval($device['timeout']))
-					echo "<div class='device-runtime is-red'><em>Status</em><br>OFFLINE</div>";
+					echo "<div class='device-runtime is-red'><em>Status</em><br>Offline (",$device['uptime'],")</div>";
 				else
 					echo "<div class='device-runtime'><em>Runtime</em><br>",$device['uptime'],"</div>";
 
 				echo "<div class='device-connected'><em>Connected</em><br>",dtstr($device['connect'], 'd.m.y H:i'),"</div>";
 				if ((time() - $last_ping_dt) > intval($device['timeout']))
-					echo "<div class='device-lastping is-red'><em>Last Ping</em><br>",time_diff($last_ping_seconds, false),"</div>";
+					echo "<div class='device-lastping is-red'><em>Last Ping</em><br>",dtstr($device['alive'], 'd.m.y H:i'),"</div>";
 				else
 					echo "<div class='device-lastping'><em>Last Ping</em><br>",time_diff($last_ping_seconds, false),"</div>";
 

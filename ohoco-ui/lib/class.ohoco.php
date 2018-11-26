@@ -1,4 +1,4 @@
-<?php	// last change: 2018-11-14
+<?php	// last change: 2018-11-26
 class clsOHoCo {
 	var $config;
 	var $log_items;
@@ -202,9 +202,14 @@ class clsOHoCo {
 		//echo __CLASS__.'::'.__FUNCTION__.'<br>';
 		foreach ($this->config['switch'] as $switch_id => $switch_info) {
 			if ($switch_info['device'] == $device_id) {
-				$this->log('config', $switch_id, 'removed');
-				unset($this->config['sensor'][$switch_id]);
-				unset($this->config['switch'][$switch_id]);
+				if (isset($this->config['sensor'][$switch_id])) {
+					$this->log('config', $switch_id, 'Sensor removed');
+					unset($this->config['sensor'][$switch_id]);
+				}
+				if (isset($this->config['switch'][$switch_id])) {
+					$this->log('config', $switch_id, 'Switch removed');
+					unset($this->config['switch'][$switch_id]);
+				}
 			}
 		}
 		foreach ($this->config['notify'] as $notify_id => $notify_array) {
@@ -217,7 +222,7 @@ class clsOHoCo {
 				}
 			}
 		}
-		$this->log('config', $device_id, 'removed');
+		$this->log('config', $device_id, 'Device removed');
 		unset($this->config['device'][$device_id]);
 		$this->config_has_changed = true;
 	}
@@ -322,7 +327,14 @@ class clsOHoCo {
 	}
 
 	function sensor_unregister($sensor_id) {
-		unset($this->config['sensor'][$sensor_id]);
+		if (isset($this->config['sensor'][$sensor_id])) {
+			$this->log('config', $sensor_id, 'Sensor removed');
+			unset($this->config['sensor'][$sensor_id]);
+		}
+		if (isset($this->config['switch'][$sensor_id])) {
+			$this->log('config', $sensor_id, 'Switch removed');
+			unset($this->config['switch'][$sensor_id]);
+		}
 		$this->config_has_changed = true;
 	}
 
