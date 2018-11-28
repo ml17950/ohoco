@@ -1,4 +1,4 @@
-<?php	// last change: 2018-11-26
+<?php	// last change: 2018-11-28
 class clsOHoCo {
 	var $config;
 	var $log_items;
@@ -494,6 +494,14 @@ unset($this->config['switch'][$switch_id]);
 		echo __CLASS__.'::'.__FUNCTION__.'<br>';
 	}
 
+	function trigger_unregister($trigger_id) {
+		if (isset($this->config['trigger'][$trigger_id])) {
+			$this->log('config', $trigger_id, 'Trigger removed');
+			unset($this->config['trigger'][$trigger_id]);
+		}
+		$this->config_has_changed = true;
+	}
+
 	function trigger_activate($trigger_id, $payload) {
 		//echo __CLASS__.'::'.__FUNCTION__.'<br>';
 		$this->log('trigger', $trigger_id, 'activated');
@@ -552,6 +560,14 @@ unset($this->config['switch'][$switch_id]);
 			}
 		}
 		return true;
+	}
+
+	function rules_unregister($rule_id) {
+		if (isset($this->config['rules'][$rule_id])) {
+			$this->log('config', $rule_id, 'Rule removed');
+			unset($this->config['rules'][$rule_id]);
+		}
+		$this->config_has_changed = true;
 	}
 
 	function rules_check_single_condition($type, $sensor_id, $is_value, $check_value) {

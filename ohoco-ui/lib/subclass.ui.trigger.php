@@ -1,4 +1,4 @@
-<?php	// last change: 2018-10-16
+<?php	// last change: 2018-11-28
 class clsTriggerInterface {
 	var $ohoco;
 
@@ -39,9 +39,9 @@ class clsTriggerInterface {
 					echo "<div class='trigger-name'>",$trigger_name,"</div>";
 
 					echo "<div class='trigger-change'>",dtstr($trigger['fired']),"</div>";
-					echo "<div class='trigger-options'><a href='index.php?view=trigger&id=",$trigger_id,"&do=activate'><img src='res/img/ui/activate.png' width='24' height='24' alt='activate' title='activate trigger now'></a></div>";
+					echo "<div class='trigger-options'><a href='index.php?view=trigger&id=",$trigger_id,"&do=delete'><img src='res/img/ui/delete.png' width='24' height='24' alt='delete' title='delete'></a></div>";
 	 				echo "<div class='trigger-options'><a href='index.php?view=trigger-edit&id=",$trigger_id,"'><img src='res/img/ui/edit.png' width='24' height='24' alt='edit' title='edit'></a></div>";
-// 					echo "<div class='trigger-options'><a href='index.php?view=trigger-edit&",$trigger_id,"&do=delete'><img src='res/img/ui/delete.png' width='24' height='24' alt='delete' title='delete'></a></div>";
+	 				echo "<div class='trigger-options'><a href='index.php?view=trigger&id=",$trigger_id,"&do=activate'><img src='res/img/ui/activate.png' width='24' height='24' alt='activate' title='activate trigger now'></a></div>";
 
 					if (count($trigger['actions']) > 0) {
 						echo "<div class='trigger-actions'>";
@@ -82,7 +82,6 @@ class clsTriggerInterface {
 
 	function edit_switch_row($preslected_id, $preslected_state, $can_be_removed) {
 		if (count($this->ohoco->config['switch']) > 0) {
-			echo "<label for='newname'>Schalte</label>";
 			echo "<select name='switch_id[]' size='1'>";
 			echo "<option value='-'>---</option>";
 			foreach ($this->ohoco->config['switch'] as $switch_id => $device_item) {
@@ -111,7 +110,6 @@ class clsTriggerInterface {
 
 	function edit_notify_row($preslected_id, $preslected_text, $can_be_removed) {
 		if ((count($this->ohoco->config['notify']) > 0) || (!empty(TELEGRAM_API_KEY))) {
-			echo "<label for='newname'>notify via</label>";
 			echo "<select name='notify_type[]' size='1'>";
 			echo "<option value='-'>---</option>";
 			if (!empty(TELEGRAM_API_KEY)) {
@@ -144,47 +142,32 @@ class clsTriggerInterface {
 		echo "<label for='newname'>Name</label>";
 		echo "<input type='text' name='newname' value='",$this->ohoco->config['trigger'][$trigger_id]['name'],"'><br>";
 
-// 		echo "<label for='newname'>Name</label>";
-// 		echo "<select id='cond_status_",$cond_index,"' name='cond_status_",$cond_index,"' size='1'>";
-// 		echo "<option value='SWITCH'>SWITCH</option>";
-// 		echo "<option value='NOTIFY'>NOTIFY</option>";
-// 		echo "<option value='COMAND'>COMMAND</option>";
-// 		echo "</select><br>";
+		echo "<label>Schalte ...</label><br>";
 
 		foreach ($this->ohoco->config['trigger'][$trigger_id]['actions'] as $n => $action) {
 			if ($action['type'] == 'SWITCH') {
 				$this->edit_switch_row($action['id'], $action['val'], true);
 			}
-			elseif ($action['type'] == 'NOTIFY') {
+		}
+		$this->edit_switch_row('', '', false);
+
+		echo "<br><label>Informiere ...</label><br>";
+
+		foreach ($this->ohoco->config['trigger'][$trigger_id]['actions'] as $n => $action) {
+			if ($action['type'] == 'NOTIFY') {
 				$this->edit_notify_row($action['id'], $action['val'], true);
 			}
 		}
-
-		$this->edit_switch_row('', '', false);
 		$this->edit_notify_row('', '', false);
 
 		echo "<input type='submit' value='Speichern'>";
 		echo "</form>";
 
-// 		echo "<em>",TXTAPILINKS,"<br><br>";
-// 		if (array_key_exists($sensor_id, $this->ohoco->config['switch'])) {
-// 			echo BASEURL.'/rpc/switch/on/?id='.$sensor_id;
-// 			echo "<br><br>";
-// 			echo BASEURL.'/rpc/switch/off/?id='.$sensor_id;
-// 			echo "<br><br>";
-// 			echo BASEURL.'/rpc/switch/toggle/?id='.$sensor_id;
-// 		}
-// 		else
-// 			echo BASEURL.'/rpc/sensor/value/?id='.$sensor_id.'&payload=%val%';
-// 		echo "</em>";
+		echo "<em>",TXTAPILINKS,"<br><br>";
+		echo BASEURL.'/rpc/trigger/activate/?id='.$trigger_id;
+		echo "</em>";
 
 		echo "</div>";
-
-// echo "<div class='debug'>";
-// debugarr($this->ohoco->config['trigger'][$trigger_id]);
-// debugarr($this->ohoco->config['notify']);
-// // debugarr($this->ohoco->config);
-// echo "</div>";
 	}
 }
 ?>

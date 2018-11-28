@@ -1,4 +1,4 @@
-<?php	// last change: 2018-10-16
+<?php	// last change: 2018-11-28
 	$do = param('do');
 
 	switch ($view) {
@@ -67,6 +67,12 @@
 				header('Location: index.php?view=trigger');
 				exit;
 			}
+			elseif ($do == 'delete') {
+				$id = param('id');
+				$ui->ohoco->trigger_unregister($id);
+				header('Location: index.php?view=trigger');
+				exit;
+			}
 			break;
 
 		case 'trigger-edit':
@@ -132,6 +138,12 @@
 				$ui->ohoco->config_has_changed = true;
 
 				header('Location: index.php?view=rule-edit&id='.$id);
+				exit;
+			}
+			elseif ($do == 'delete') {
+				$id = param('id');
+				$ui->ohoco->rules_unregister($id);
+				header('Location: index.php?view=rules');
 				exit;
 			}
 			break;

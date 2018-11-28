@@ -1,4 +1,4 @@
-<?php	// last change: 2018-10-16
+<?php	// last change: 2018-11-28
 class clsRuleInterface extends clsUserInterface {
 	var $ohoco;
 
@@ -23,6 +23,8 @@ class clsRuleInterface extends clsUserInterface {
 				else
 					echo "<div class='rule-status'><a href='index.php?view=rules&do=activate-rule&id=",$ruleid,"'><img src='res/img/ui/is-off.png' width='40' height='40'></a></div>";
 				echo "<div class='rule-name'>",$rule['name'],"</div>";
+				if ($rule['active'] == 0)
+					echo "<div class='rule-options'><a href='index.php?view=rules&id=",$ruleid,"&do=delete'><img src='res/img/ui/delete.png' width='24' height='24' alt='delete' title='delete'></a></div>";
 				echo "<div class='rule-options'><a href='index.php?view=rule-edit&id=",$ruleid,"'><img src='res/img/ui/edit.png' width='24' height='24' alt='edit' title='edit'></a></div>";
 
 // 				echo "<div class='rule-conditions'>";
@@ -204,9 +206,9 @@ class clsRuleInterface extends clsUserInterface {
 
 		echo "</div>"; // .form-container
 
-		echo "<div class='debug'>";
-		debugarr($this->ohoco->config['rules'][$rule_id]);
-		echo "</div>";
+// 		echo "<div class='debug'>";
+// 		debugarr($this->ohoco->config['rules'][$rule_id]);
+// 		echo "</div>";
 	}
 }
 ?>
