@@ -95,7 +95,10 @@ class OHoCo {
     void sensor_update(char* sensor_name, char* sensor_value);
     void sensor_update(char* sensor_name, int sensor_value);
     void sensor_update(char* sensor_name, float sensor_value, int precision);
-    
+
+    void switch_on(char* switch_name);
+    void switch_off(char* switch_name);
+    void switch_toggle(char* switch_name);
     void trigger_activate(char* trigger_name);
     void notify(char* notify_name, char* message);
 

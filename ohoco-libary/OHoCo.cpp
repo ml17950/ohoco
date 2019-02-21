@@ -1,6 +1,6 @@
 #include "OHoCo.h"
 
-const char*  OHOCO_VERSION     = "18.11.14";
+const char*  OHOCO_VERSION     = "19.02.21";
 
 WiFiClient WiFiClient;
 PubSubClient MQTTClient(WiFiClient);
@@ -765,6 +765,60 @@ void OHoCo::sensor_update(char* sensor_name, float sensor_value, int precision) 
   this->sensor_update(sensor_name, CString);
 }
 
+void OHoCo::switch_on(char* switch_name) {
+  this->println("API  >> Switch " + String(switch_name) + " on");
+  
+  char topic[128] = {0};
+  char pload[128] = {0};
+  
+  strcat(pload, "1");
+  
+  if (this->_USE_MQTT) {
+    sprintf(topic, "ohoco/switch/on/%s", switch_name);
+    this->mqtt_publish(topic, pload, false);
+  }
+  else {
+    sprintf(topic, "switch/on/?id=%s", switch_name);
+    this->http_publish(topic, pload);
+  }
+}
+
+void OHoCo::switch_off(char* switch_name) {
+  this->println("API  >> Switch " + String(switch_name) + " off");
+  
+  char topic[128] = {0};
+  char pload[128] = {0};
+  
+  strcat(pload, "1");
+  
+  if (this->_USE_MQTT) {
+    sprintf(topic, "ohoco/switch/off/%s", switch_name);
+    this->mqtt_publish(topic, pload, false);
+  }
+  else {
+    sprintf(topic, "switch/off/?id=%s", switch_name);
+    this->http_publish(topic, pload);
+  }
+}
+
+void OHoCo::switch_toggle(char* switch_name) {
+  this->println("API  >> Switch " + String(switch_name) + " toggle");
+  
+  char topic[128] = {0};
+  char pload[128] = {0};
+  
+  strcat(pload, "1");
+  
+  if (this->_USE_MQTT) {
+    sprintf(topic, "ohoco/switch/toggle/%s", switch_name);
+    this->mqtt_publish(topic, pload, false);
+  }
+  else {
+    sprintf(topic, "switch/toggle/?id=%s", switch_name);
+    this->http_publish(topic, pload);
+  }
+}
+
 void OHoCo::trigger_activate(char* trigger_name) {
   this->println("API  >> Activate trigger " + String(trigger_name));
   
@@ -1117,4 +1171,3 @@ void OHoCo::ota_update() {
       this->println(ret);
   }
 }
-
